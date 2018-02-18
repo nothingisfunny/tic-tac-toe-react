@@ -19,7 +19,7 @@ function calculateWinner(squares){
   for (let i in winCombos){
   const [a, b, c] = winCombos[i];
     if(squares[a] && squares[a] === squares[b] && squares[a] === squares[c]){
-      return squares[a]
+      return [a, b, c]
     }
   }
 }
@@ -27,7 +27,7 @@ function calculateWinner(squares){
 
 function Square(props){
     return (
-      <button className="square" onClick = {props.onClick}>
+      <button className="square" onClick = {props.onClick} style={{backgroundColor: props.color}}>
         {props.value}
       </button>
     );
@@ -37,15 +37,19 @@ class Board extends Component {
 
   renderSquare(i) {
     return <Square value={this.props.squares[i]} 
-          onClick={() => this.props.onClick(i)}/>;
+          onClick={() => this.props.onClick(i)}
+          color = {
+            this.props.winnerCombo && this.props.winnerCombo.indexOf(i) > -1 ? "yellow" : null
+          }
+          />;
   }
   render() {
   let rows = Array(3).fill(null)
   let board = rows.map((i, row)=>{
-    return <div className="board-row">
+    return <div className="board-row" key={row}>
     {
       Array(3).fill(null).map((j, column)=>{
-        return <span>{this.renderSquare(row*3 + column)}</span>
+        return <span key = {row*3 + column}>{this.renderSquare(row*3 + column)}</span>
       })
     }
     </div>
@@ -71,12 +75,11 @@ class Game extends Component {
       moves: [],
       stepNumber: 0, 
       xIsNext: true,
-      winnerCombo: []
+      sortDesc: false
     }
   }
 
   handleClick(i){
-    console.log(i)
     const current = this.state.history[this.state.history.length - 1]
     const squares = current.squares.slice();
     const moves = this.state.moves.slice()
@@ -89,7 +92,7 @@ class Game extends Component {
       moves: moves,
       xIsNext: !this.state.xIsNext,
       stepNumber: this.state.history.length,
-      sortDesc: false
+      
     })
   }
 
@@ -101,13 +104,17 @@ class Game extends Component {
   }
 
   render() {
+    
     const history = this.state.history;
     const current = history[this.state.stepNumber];
-    const winner = calculateWinner(current.squares)
+    const winnerCombo = calculateWinner(current.squares)
+  
+    const winner = winnerCombo ? current.squares[winnerCombo[0]] : null
+
     const coord = this.state.sortDesc ? this.state.moves.reverse() : this.state.moves
     const moves = history.map((step, move) => {
 
-      let currentMove = this.state.sortDesc ? move : history.length - move
+      let currentMove = this.state.sortDesc ? history.length - move : move
 
       
       const desc = move ?
@@ -121,6 +128,7 @@ class Game extends Component {
 
 
     let status;
+    
     if(winner){
       status = `Winner: ${winner}`
     } else if(!winner && current.squares.every((i)=> i!== null )){
@@ -133,14 +141,15 @@ class Game extends Component {
       <div className="game">
         <div className="game-board">
           <Board 
+            winnerCombo = {winnerCombo}
             squares = {current.squares}
             onClick ={(i) => this.handleClick(i)}
             />
         </div>
         <div className="game-info">
           <div>{status}</div>
-          <ol>{moves}</ol>
-          <button onClick={() => this.setState({sortDesc: !this.state.sortDesc})}>Sort {this.state.desc ? 'ASC' : 'DESC'}</button>
+          <ul>{moves}</ul>
+          <button onClick={() => this.setState({sortDesc: !this.state.sortDesc})}>Sort {this.state.sortDesc ? 'ASC' : 'DESC'}</button>
         </div>
       </div>
     );
